@@ -4,9 +4,11 @@ performance
 yolov8x.pt
 test1_birdseye.mp4
 test1_cam.mp4
+test1_pose.mp4
 exp1.mp4
 exp1_birdseye.mp4
 exp1_cam.mp4
+exp1_pose.mp4
 progress.txt
 
 # Byte-compiled / optimized / DLL files
