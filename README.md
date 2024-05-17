@@ -33,8 +33,13 @@ This script will install the Python dependencies for this pipeline.
 
    For example:
     ```sh
-    python main.py --input videos/test1.mp4 --combined_display --pose_viz
+    python main.py --input ./test1.mp4 --pose_viz
     ```
+    or:
+    ```sh
+    python main.py --input ./test1.mp4 --combined_display --pose_viz
+    ```
+
 
 3. After running the script, you will find the output video files in the same directory as your input file, with additional suffixes indicating the type of output (e.g., `_cam`, `_birdseye`, `_combined`, `_pose`).
 
