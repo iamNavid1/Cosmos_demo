@@ -2,8 +2,10 @@ numpy==1.24.3
 pandas==2.0.3 
 opencv-python==4.9.0.80 
 shapely==2.0.1 
+filterpy==1.4.5
 ultralytics==8.0.196 
 torch==2.1.1 
 torchaudio==2.1.1 
 torchvision==0.16.1 
 openmim
+loguru
