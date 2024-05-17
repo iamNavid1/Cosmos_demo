@@ -1,6 +1,6 @@
 ## Installation
 
-1. Create a new environment and activate it
+1. Create a new environment and activate it (preferably with Python 3.9.16)
 
 2. Clone the repository:
     ```sh
