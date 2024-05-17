@@ -10,6 +10,8 @@ exp1_birdseye.mp4
 exp1_cam.mp4
 exp1_pose.mp4
 progress.txt
+track_dic.json
+track_dic.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
