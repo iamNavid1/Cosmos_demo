@@ -1,16 +1,18 @@
 ## Installation
 
-1. Clone the repository:
+1. Create a new environment and activate it
+
+2. Clone the repository:
     ```sh
     git clone https://github.com/CyPhy-Intelligence-Lab/VisionPipeline.git
     ```
 
-2. Navigate to the project directory:
+3. Navigate to the project directory:
     ```sh
     cd VisionPipeline
     ```
 
-3. Run the setup script:
+4. Run the setup script:
     ```sh
     ./setup.sh
     ```
