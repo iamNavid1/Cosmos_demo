@@ -96,7 +96,9 @@ def Main(input_path, combined_display, pose_viz):
             detections = projection.add_transformation(detections)
         
         # Get the pose estimation of the detected people
-        pose_frame, pose_frame, pose_det = pose_estimator.get_pose(frame, frame_idx, detections)
+        pose_frame_2d, pose_frame_3d, pose_det = pose_estimator.get_pose(frame, frame_idx, detections)
+        if pose_viz:
+            frame = pose_frame_2d
 
         # Update the track history and generate the 3D bounding box
         track_dic = TrackHistoryUpdate(track_dic, detections, pose_det)
@@ -123,7 +125,7 @@ def Main(input_path, combined_display, pose_viz):
             # cv.imshow("Combined View", combined_frame)
             combined_out.write(combined_frame)
             if pose_viz:
-                pose_out.write(pose_frame)
+                pose_out.write(pose_frame_3d)
         else:
             cv.putText(frame, f"FPS: {fps:.1f}", (50, 50),
                 cv.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2, cv.LINE_AA)
@@ -132,7 +134,7 @@ def Main(input_path, combined_display, pose_viz):
             cam_out.write(frame)
             birdseye_out.write(birdseye_copy)
             if pose_viz:
-                pose_out.write(pose_frame)
+                pose_out.write(pose_frame_3d)
 
         if cv.waitKey(1) & 0xFF in (ord("q"),27):
             break
