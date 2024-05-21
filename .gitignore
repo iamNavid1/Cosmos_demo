@@ -2,6 +2,7 @@
 performance
 .env
 yolov8x.pt
+yolov9e.pt
 test1_birdseye.mp4
 test1_cam.mp4
 test1_pose.mp4

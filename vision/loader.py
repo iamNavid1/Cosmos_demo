@@ -41,9 +41,9 @@ class ResourceLoader:
                 # model_weights=Path('osnet_x0_25_msmt17.pt'), # which ReID model to use
                 # device='mps',
                 # fp16=True,
-                # det_thresh = .25,
                 asso_func='iou',
-                min_hits=7,
+                det_thresh = .2,
+                min_hits=3,
                 max_age = 90)
             return tracker
         except FileNotFoundError as e:

@@ -3,6 +3,7 @@ import cv2 as cv
 import colorsys
 import vision.constants as c
 import mmcv
+from .util import get_color
 from mmpose.apis import (convert_keypoint_definition, 
                         extract_pose_sequence,
                         inference_pose_lifter_model, inference_topdown)
@@ -15,19 +16,6 @@ class ObjectDetection:
         self.timestamp = timestamp
         self.classes_list = classes_list
         self.tracker = tracker
-
-
-    @staticmethod
-    def get_color(number):
-        " Converts an integer number to a color "
-        # change these however you want to
-        hue = number*30 % 180
-        saturation = number*103 % 256
-        value = number*50% 256
-        
-        # expects normalized values
-        color = colorsys.hsv_to_rgb (hue/179, saturation/255, value/255)
-        return [int(c*255) for c in color]
 
 
     def get_pedestrains(self, frame, frame_idx):
@@ -77,7 +65,7 @@ class ObjectDetection:
                 # if center[0] < 0 or center[0] > self.frame.shape[1] or center[1] < 0 or center[1] > self.frame.shape[0]:
                 #     continue
                 detections.append([current_time, frame_idx, id, xyxy[0], xyxy[1], xyxy[2], xyxy[3], center[0], center[1]])
-                color = self.get_color(id*50)
+                color = get_color(id)
                 # cv.rectangle(
                 #     self.frame,
                 #     (xyxy[0], xyxy[1]),
