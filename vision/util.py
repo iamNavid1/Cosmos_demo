@@ -5,7 +5,7 @@ from vision.bbox3d import BBox3D
 import numpy as np
 
 
-def TrackHistoryUpdate(track_dic, detections, pose_detections):
+def TrackHistoryUpdate(track_dic, detections, pose_detections, frame_idx):
     """
     Update the tracker history with new detections.
     """
@@ -62,17 +62,19 @@ def TrackHistoryUpdate(track_dic, detections, pose_detections):
             track_dic[id]['pose3D'].append(pose3D[ids.index(id)])
 
     # track_dic = FullBBox3D(track_dic).get_3dbox()
+    if frame_idx % 100 == 0:
+        track_dic = delete_track(track_dic)
     return track_dic
 
 
 def delete_track(track_dic):
     """
-    Delete tracks from the tracker history whose readings are None for 60 frame
+    Delete tracks from the tracker history whose last timestamp is None.
     """
     # delete the track whose pos_cam is None for 90 frames
     track_dic_ = track_dic.copy()
     for key in track_dic:
-        if track_dic[key]['pos_cam'].count(None) == 90:
+        if track_dic[key]['timestamp'][-1] is None:
             del track_dic_[key]
     
     return track_dic_

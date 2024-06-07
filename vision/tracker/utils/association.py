@@ -23,7 +23,7 @@ def linear_assignment(cost_matrix):
     except ImportError:
         from scipy.optimize import linear_sum_assignment
         x, y = linear_sum_assignment(cost_matrix)
-        return np.array([list(zip(x, y))])
+        return np.array(list(zip(x, y)))
 
 
 def associate_detections_to_trackers(detections, trackers, iou_threshold=0.3):

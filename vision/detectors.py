@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
 import colorsys
+import time
 import vision.constants as c
 import mmcv
 from .util import get_color
@@ -48,7 +49,7 @@ class ObjectDetection:
                 result_ = np.array([[-1, -1, -1, -1, -1, -1]])
             # update the tracker with the new detections
             tracks = self.tracker.update(result_, self.frame)
-            current_time = self.timestamp[frame_idx-1]
+            current_time = time.time()
             for track in tracks:
                 xyxy = track[0:4].astype('int') # float64 to int
                 # check if the bounding box is more than 20px outside the frame dimensions

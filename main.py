@@ -2,6 +2,7 @@ import numpy as np
 import os
 import cv2 as cv
 import time
+import datetime
 import argparse
 import datetime
 from vision.detectors import ObjectDetection, PoseEstimation
@@ -44,9 +45,10 @@ def Main(input_path, combined_display, pose_viz):
     pose_output_path = os.path.join(directory_path, file_name + "_pose" + extension)
 
     # Capture the video
+    rtsp_str = f"rtsp://{args.usr_name}:{args.usr_pwd}@{args.rtsp_url}?videoencodec=h264&resolution={args.resolution}&fps={args.fps}&date=1&clock=1"
     cap = cv.VideoCapture(input_path)
     if not cap.isOpened():
-        print("Error: Video file not found or could not be opened.")
+        print("Error: Failed to open the video stream")
         return
     
     # Get video properties for saving
@@ -74,20 +76,21 @@ def Main(input_path, combined_display, pose_viz):
     track_dic = {}
     frame_idx = 1
     # stop_frame = 180
-    stop_frame = cap.get(cv.CAP_PROP_FRAME_COUNT)
-    cap.set(cv.CAP_PROP_POS_FRAMES, frame_idx-1)
+    # stop_frame = cap.get(cv.CAP_PROP_FRAME_COUNT)
+    # cap.set(cv.CAP_PROP_POS_FRAMES, frame_idx-1)
 
     
-    while frame_idx <= stop_frame:
+    while True:
         
         # Keep track of the progress
         with open('progress.txt', 'w') as f:
-            f.write(f"{float(timestamp1[frame_idx-1])}\n")
+            f.write(f"{str(datetime.datetime.now())}\n")
 
         start = datetime.datetime.now()
         
         ret, frame = cap.read()
         if not ret:
+            print("Error: Failed to read the frame")
             break
           
         # Detect people in the frame
@@ -97,19 +100,19 @@ def Main(input_path, combined_display, pose_viz):
         
         # Get the pose estimation of the detected people
         pose_frame_2d, pose_frame_3d, pose_det = pose_estimator.get_pose(frame, frame_idx, detections)
-        if pose_viz:
-            frame = pose_frame_2d
+        frame = pose_frame_2d
 
         # Update the track history and generate the 3D bounding box
-        track_dic = TrackHistoryUpdate(track_dic, detections, pose_det)
+        track_dic = TrackHistoryUpdate(track_dic, detections, pose_det, frame_idx)
         track_dic = BBox3D(track_dic).get_3dbox()
+
+        # Visualize the 3D bounding box of the detected objects
+        frame = Viz3Dbbox(track_dic, frame)
 
         # Visualize the bird's eye view of the detected objects
         birdseye_copy = birdseye.copy()
         VizBird(track_dic, birdseye_copy)
 
-        # Visualize the 3D bounding box of the detected objects
-        frame = Viz3Dbbox(track_dic, frame)
         frame_idx += 1
         
         end = datetime.datetime.now()
@@ -142,31 +145,31 @@ def Main(input_path, combined_display, pose_viz):
                 
     print(f"Average FPS: {np.mean(fps_):.2f}")
 
-    # save the track_dic as a json file
-    with open('track_dic.json', 'w') as outfile:
-        json.dump(track_dic, outfile)
+    # # save the track_dic as a json file
+    # with open('track_dic.json', 'w') as outfile:
+    #     json.dump(track_dic, outfile)
 
-    # save the full as a csv file
-    csv_file = 'track_dic.csv'
-    with open(csv_file, 'w', newline='') as csvfile:
-        fieldnames = ['track id', 'timestamp', 'frame_count', 'pos_cam', 'pos_bird', 'bbox2D', 'bbox3D', 'theta', 'pose3D']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for id, data in track_dic.items():
-            list_lengths = len(data['bbox3D'])
-            # min_length = min(list_lengths)
-            for i in range(list_lengths):
-                writer.writerow({
-                    'track id': id,
-                    'timestamp': data['timestamp'][i],
-                    'frame_count': data['frame_count'][i],
-                    'pos_cam': data['pos_cam'][i],
-                    'pos_bird': data['pos_bird'][i],
-                    'bbox2D': data['bbox2D'][i],
-                    'bbox3D': data['bbox3D'][i],
-                    'theta': data['theta'][i],
-                    'pose3D': data['pose3D'][i]
-                })
+    # # save the full as a csv file
+    # csv_file = 'track_dic.csv'
+    # with open(csv_file, 'w', newline='') as csvfile:
+    #     fieldnames = ['track id', 'timestamp', 'frame_count', 'pos_cam', 'pos_bird', 'bbox2D', 'bbox3D', 'theta', 'pose3D']
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #     writer.writeheader()
+    #     for id, data in track_dic.items():
+    #         list_lengths = len(data['bbox3D'])
+    #         # min_length = min(list_lengths)
+    #         for i in range(list_lengths):
+    #             writer.writerow({
+    #                 'track id': id,
+    #                 'timestamp': data['timestamp'][i],
+    #                 'frame_count': data['frame_count'][i],
+    #                 'pos_cam': data['pos_cam'][i],
+    #                 'pos_bird': data['pos_bird'][i],
+    #                 'bbox2D': data['bbox2D'][i],
+    #                 'bbox3D': data['bbox3D'][i],
+    #                 'theta': data['theta'][i],
+    #                 'pose3D': data['pose3D'][i]
+    #             })
 
     cap.release()
     if combined_display:
@@ -186,7 +189,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pedestrian Tracking Program")
     parser.add_argument('--input', type=str, default='test1.mp4', help="Path to input file")
     parser.add_argument('--combined_display', action='store_true', default=False, help="Whether to combine the outputs into one window")
-    parser.add_argument('--pose_viz', action='store_true', default=False, help="Whether to visualize the pose estimation")
+    parser.add_argument('--pose_viz', action='store_true', default=True, help="Whether to visualize the pose estimation")
+    parser.add_argument('--usr_name', type=str, default="cosmosuser", help='User name for the progress file')
+    parser.add_argument('--usr_pwd', type=str, default="cosmos101", help='Password for the progress file')
+    parser.add_argument('--rtsp_url', type=str, default="cam1-md1.sb1.cosmos-lab.org/axis-media/media.amp", help='RTSP URL for the progress file')
+    parser.add_argument('--resolution', type=str, default='1280x720', help='Resolution for the progress file')
+    parser.add_argument('--fps', type=int, default=10, help='FPS for the progress file')
     args = parser.parse_args()
     Main(args.input, args.combined_display, args.pose_viz)
     end_time = time.time()
