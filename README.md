@@ -1,10 +1,13 @@
 ## Installation
 
 1. Create a new environment and activate it (preferably with Python 3.9.16)
+    ```sh
+    conda create -n vision python=3.9.16
+    ```
 
 2. Clone the repository:
     ```sh
-    git clone https://github.com/CyPhy-Intelligence-Lab/VisionPipeline.git
+    git clone https://github.com/iamNavid1/Cosmos.git
     ```
 
 3. Navigate to the project directory:
