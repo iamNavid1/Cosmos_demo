@@ -12,9 +12,8 @@ from mmpose.structures import PoseDataSample, merge_data_samples, split_instance
 
 class ObjectDetection:
     
-    def __init__(self, model, timestamp, classes_list, tracker=None): 
+    def __init__(self, model, classes_list, tracker=None): 
         self.model = model
-        self.timestamp = timestamp
         self.classes_list = classes_list
         self.tracker = tracker
 
@@ -91,11 +90,13 @@ class ObjectDetection:
 
 class PoseEstimation:
         
-        def __init__(self, pose_estimator, pose_lifter, visualizer, pose_viz=False):
+        def __init__(self, pose_estimator, pose_lifter, visualizer, num_instances, plot_size, pose_viz=False):
             self.pose_estimator = pose_estimator
             self.pose_lifter = pose_lifter
             self.visualizer = visualizer
             self.pose_est_results_list = []
+            self.num_instances = num_instances
+            self.plot_size = plot_size
             self.pose_viz = pose_viz
 
 
@@ -104,8 +105,8 @@ class PoseEstimation:
             self.frame_idx = frame_idx
             self.detections = detections
 
-            det_frame, pose_frame, pred_3d_keypoints = self.process_one_image()
-            return det_frame, pose_frame, pred_3d_keypoints
+            pose2d_frame, pose3d_list, pred_3d_keypoints = self.process_one_image()
+            return pose2d_frame, pose3d_list, pred_3d_keypoints
 
 
         def process_one_image(self):
@@ -225,7 +226,7 @@ class PoseEstimation:
             pred_3d_keypoints = pred_3d_data_samples.get('pred_instances', None).get('keypoints')
             
             if self.pose_viz:
-                det_frame, pose_frame = self.visualizer.add_datasample(
+                pose2d_frame, pose3d_list = self.visualizer.add_datasample(
                     'result',
                     visualize_frame,
                     data_sample=pred_3d_data_samples,
@@ -237,15 +238,16 @@ class PoseEstimation:
                     show=False,
                     draw_bbox=False,
                     kpt_thr=0.1,
-                    num_instances=8,
+                    num_instances=self.num_instances,
+                    plot_size=self.plot_size,
                     wait_time=0,
                     show_kpt_idx=False)
                 # frame_vis = self.visualizer.get_image()
                 # mmcv.imwrite(frame_vis, 'NEW.jpg')
             
             else:
-                det_frame = self.frame
-                pose_frame = None
+                pose2d_frame = self.frame
+                pose3d_list = None
                                     
-            return det_frame, pose_frame, pred_3d_keypoints
+            return pose2d_frame, pose3d_list, pred_3d_keypoints
 

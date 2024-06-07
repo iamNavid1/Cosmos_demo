@@ -96,14 +96,12 @@ class ResourceLoader:
 
     def load_background(self):
         try:
-            Cam = cv.imread(c.CamViewPath)
             BirdsEye = cv.imread(c.BirdsEyeViewPath)
-            Timestamp1 = np.array(pd.read_csv(c.Cam1TSPath, header=None))
-            return Cam, BirdsEye, Timestamp1
+            return BirdsEye
         except FileNotFoundError as e:
             print(f"Error loading images: {e}")
             return None, None
         except Exception as e:
-            print(f"An error occurred while loading images: {e}")
+            print(f"An error occurred while loading background image: {e}")
             return None, None
     

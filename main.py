@@ -15,34 +15,32 @@ import csv
 
 
 # Main function to stream the video, detect people, track on birdseye view, and save the output 
-def Main(input_path, combined_display, pose_viz):
+def Main(args, input_path, pose_viz):
 
     # Import resources
     loader = ResourceLoader()
     detection_model, classes_list = loader.load_yolo()        # YOLO model and its classes 
     tracker = loader.load_tracker()                           # Tracker model
     pose_model, pose_lifter, visualizer = loader.load_pose()  # Pose estimation model, its lifter, and visualizer
-    cam, birdseye, timestamp1 = loader.load_background()      # Background images at camera view and birdseye view
+    birdseye = loader.load_background()      # Background images at camera view and birdseye view
 
-    object_detector = ObjectDetection(detection_model, timestamp1, classes_list, tracker)
-    pose_estimator = PoseEstimation(pose_model, pose_lifter, visualizer, pose_viz)
+    object_detector = ObjectDetection(detection_model, classes_list, tracker)
+    pose_estimator = PoseEstimation(pose_model, pose_lifter, visualizer, args.num_instances, args.plot_size, pose_viz)
     projection = Cam2Bird()
 
     # Frame properties for displaying and saving
-    cam_height, cam_width = cam.shape[:2]
+    cam_width, cam_height = map(int, args.resolution.split('x'))
     birdseye_height, birdseye_width = birdseye.shape[:2]
-    padding = 25
-    combined_frame_width = cam_width + birdseye_width + padding
-    combined_frame_height = max(cam_height, birdseye_height)
-    combined_frame = np.zeros((combined_frame_height, combined_frame_width, 3), dtype=np.uint8)
+    total_width = cam_width + birdseye_width
+    total_height = max(cam_height, birdseye_height) + args.plot_size
+    if args.num_instances * args.plot_size > total_width:
+        args.num_instances = total_width // args.plot_size
+    combined_frame = np.ones((total_height, total_width, 3), dtype=np.uint8) * 255
     
     # Create output path to save
     directory_path = os.path.dirname(input_path)
     file_name, extension = os.path.splitext(os.path.basename(input_path))
-    cam_output_path = os.path.join(directory_path, file_name + "_cam" + extension)
-    birdseye_output_path = os.path.join(directory_path, file_name + "_birdseye" + extension)
-    combined_output_path = os.path.join(directory_path, file_name + "_combined" + extension)
-    pose_output_path = os.path.join(directory_path, file_name + "_pose" + extension)
+    output_path = os.path.join(directory_path, file_name + "_output" + extension)
 
     # Capture the video
     rtsp_str = f"rtsp://{args.usr_name}:{args.usr_pwd}@{args.rtsp_url}?videoencodec=h264&resolution={args.resolution}&fps={args.fps}&date=1&clock=1"
@@ -55,22 +53,7 @@ def Main(input_path, combined_display, pose_viz):
     fps = cap.get(cv.CAP_PROP_FPS)
     fourcc = cv.VideoWriter_fourcc(*'mp4v')
 
-    if combined_display:
-        # cv.namedWindow("Combined View", cv.WINDOW_NORMAL)
-        # cv.moveWindow("Combined View", 0, 0)
-        combined_out = cv.VideoWriter(combined_output_path, fourcc, fps, (combined_frame_width, combined_frame_height))
-        if pose_viz:
-            pose_out = cv.VideoWriter(pose_output_path, fourcc, fps, (cam_width, cam_height))
-
-    else:
-        # cv.namedWindow("Camera View", cv.WINDOW_NORMAL)
-        # cv.moveWindow("Camera View", 0, 0)
-        # cv.namedWindow("Bird's Eye View", cv.WINDOW_NORMAL)
-        # cv.moveWindow("Bird's Eye View", 423, 0)
-        cam_out = cv.VideoWriter(cam_output_path, fourcc, fps, (cam_width, cam_height))
-        birdseye_out = cv.VideoWriter(birdseye_output_path, fourcc, fps, (birdseye_width, birdseye_height))
-        if pose_viz:
-            pose_out = cv.VideoWriter(pose_output_path, fourcc, fps, (cam_width, cam_height))
+    out = cv.VideoWriter(output_path, fourcc, fps, (total_width, total_height))
 
     fps_ = []
     track_dic = {}
@@ -99,8 +82,8 @@ def Main(input_path, combined_display, pose_viz):
             detections = projection.add_transformation(detections)
         
         # Get the pose estimation of the detected people
-        pose_frame_2d, pose_frame_3d, pose_det = pose_estimator.get_pose(frame, frame_idx, detections)
-        frame = pose_frame_2d
+        pose2d_frame, pose3d_list, pose_det = pose_estimator.get_pose(frame, frame_idx, detections)
+        frame = pose2d_frame
 
         # Update the track history and generate the 3D bounding box
         track_dic = TrackHistoryUpdate(track_dic, detections, pose_det, frame_idx)
@@ -120,24 +103,18 @@ def Main(input_path, combined_display, pose_viz):
         fps_ = np.append(fps_, fps)
         
         # Display and write the output frame to the video file
-        if combined_display:
-            combined_frame[:cam_height, :cam_width] = frame
-            combined_frame[:birdseye_height, cam_width + padding:] = birdseye_copy
-            cv.putText(combined_frame, f"FPS: {fps:.1f}", (50, 50),
-                cv.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2, cv.LINE_AA)
-            # cv.imshow("Combined View", combined_frame)
-            combined_out.write(combined_frame)
-            if pose_viz:
-                pose_out.write(pose_frame_3d)
-        else:
-            cv.putText(frame, f"FPS: {fps:.1f}", (50, 50),
-                cv.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2, cv.LINE_AA)
-            # cv.imshow("Camera View", frame)
-            # cv.imshow("Bird's Eye View", birdseye_copy)
-            cam_out.write(frame)
-            birdseye_out.write(birdseye_copy)
-            if pose_viz:
-                pose_out.write(pose_frame_3d)
+        combined_frame[:cam_height, :cam_width] = frame
+        combined_frame[:birdseye_height, cam_width:] = birdseye_copy
+        y_offset = max(cam_height, birdseye_height)
+        for i, pose in enumerate(pose3d_list):
+            x_offset = i * args.plot_size
+            combined_frame[y_offset:, x_offset:x_offset+args.plot_size] = pose
+
+        cv.putText(combined_frame, f"FPS: {fps:.1f}", (50, 50),
+            cv.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2, cv.LINE_AA)
+        # cv.imshow("Combined View", combined_frame)
+        out.write(combined_frame)
+
 
         if cv.waitKey(1) & 0xFF in (ord("q"),27):
             break
@@ -172,15 +149,7 @@ def Main(input_path, combined_display, pose_viz):
     #             })
 
     cap.release()
-    if combined_display:
-        combined_out.release()
-        if pose_viz:
-            pose_out.release()
-    else:
-        cam_out.release()
-        birdseye_out.release()
-        if pose_viz:
-            pose_out.release()
+    out.release()
     cv.destroyAllWindows()
 
     
@@ -188,15 +157,16 @@ if __name__ == "__main__":
     start_time = time.time()
     parser = argparse.ArgumentParser(description="Pedestrian Tracking Program")
     parser.add_argument('--input', type=str, default='test1.mp4', help="Path to input file")
-    parser.add_argument('--combined_display', action='store_true', default=False, help="Whether to combine the outputs into one window")
     parser.add_argument('--pose_viz', action='store_true', default=True, help="Whether to visualize the pose estimation")
     parser.add_argument('--usr_name', type=str, default="cosmosuser", help='User name for the progress file')
     parser.add_argument('--usr_pwd', type=str, default="cosmos101", help='Password for the progress file')
     parser.add_argument('--rtsp_url', type=str, default="cam1-md1.sb1.cosmos-lab.org/axis-media/media.amp", help='RTSP URL for the progress file')
     parser.add_argument('--resolution', type=str, default='1280x720', help='Resolution for the progress file')
     parser.add_argument('--fps', type=int, default=10, help='FPS for the progress file')
+    parser.add_argument('--num_instances', type=int, default=5, help='Number of instances for displaying 3d pose estimation')
+    parser.add_argument('--plot_size', type=int, default=300, help='Size of the plot for displaying 3d pose estimation')
     args = parser.parse_args()
-    Main(args.input, args.combined_display, args.pose_viz)
+    Main(args, args.input, args.pose_viz)
     end_time = time.time()
     total_time = end_time - start_time
     print(f"Total processing time: {total_time:.2f} seconds")
