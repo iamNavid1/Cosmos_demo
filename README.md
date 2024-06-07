@@ -12,7 +12,7 @@
 
 3. Navigate to the project directory:
     ```sh
-    cd VisionPipeline
+    cd Cosmos
     ```
 
 4. Run the setup script:
