@@ -17,6 +17,12 @@ exp2_pose.mp4
 progress.txt
 track_dic.json
 track_dic.csv
+dropped2.mkv
+frame.jpg
+L2ndFloor-D2021-05-06_T11-30-01-detected.mp4
+test2.mp4
+test2_output.mp4
+util.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

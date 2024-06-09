@@ -1,3 +1,5 @@
+# Adapted from: Mikel Brostrom
+
 import numpy as np
 
 from ...motion.kalman_filters.adapters import OCSortKalmanFilterAdapter
@@ -194,6 +196,7 @@ class OCSort(object):
         asso_func="iou",
         inertia=0.2,
         use_byte=False,
+        fps=30
     ):
         """
         Sets key parameters for SORT
@@ -208,6 +211,7 @@ class OCSort(object):
         self.asso_func = get_asso_func(asso_func)
         self.inertia = inertia
         self.use_byte = use_byte
+        self.fps = fps
         KalmanBoxTracker.count = 0
 
     def update(self, dets, _):
@@ -244,6 +248,15 @@ class OCSort(object):
         remain_inds = confs > self.det_thresh
         dets = dets[remain_inds]
 
+        """ 
+        keep track of whether tracks are confirmed (i.e., there is an associated detection).
+        This is useful for pose estimation, where we want to depricate the estimated pose
+        after a short while of remaining unassociated.      
+        NOTE: Tracks that are not associated with any detection are going to be included in the
+        returned array until when they are removed (at max_age).
+        """
+        confirmed_tracks = []
+        
         # get predicted locations from existing trackers.
         trks = np.zeros((len(self.trackers), 5))
         to_del = []
@@ -279,7 +292,7 @@ class OCSort(object):
         
         # img = np.zeros((720, 1280, 3), dtype=np.uint8)
         for m in matched:
-# MY ADDED SECTION ____________________________________________________________________________________
+# # ADDED SECTION ____________________________________________________________________________________
             # det_box = dets[m[0], :4]
             # trk_box = self.trackers[m[1]].predict()[0]
             # img = cv2.rectangle(img, (int(det_box[0]), int(det_box[1])), (int(det_box[2]), int(det_box[3])), (0, 255, 0), 2)
@@ -290,7 +303,7 @@ class OCSort(object):
             # if h_diff/trk_h > 0.3:
             #     dets[m[0], :4] = trk_box.astype(np.int)
             # # print("Track {}: Height diff = {}".format(m[1], h_diff))
-# MY ADDED SECTION ____________________________________________________________________________________
+# # ADDED SECTION ____________________________________________________________________________________
             self.trackers[m[1]].update(dets[m[0], :5], dets[m[0], 5], dets[m[0], 6])
         # cv2.imshow("img2", img)
         
@@ -352,17 +365,18 @@ class OCSort(object):
                     unmatched_trks, np.array(to_remove_trk_indices)
                 )
 
-# MY ADDED SECTION ____________________________________________________________________________________
+# ADDED SECTION ____________________________________________________________________________________
         
         for m in unmatched_trks:
             self.trackers[m].update(None, None, None)
-            if self.trackers[m].time_since_update >= 1:
+            if self.trackers[m].time_since_update >= 1:   # Exclude the unmatched tracks trying to reach the min_hits (as it can be noisy)
                 # If there is no detection for a while, get the estimated bbox from the Kalman filter
-                if len(self.trackers[m].history_observations) > self.min_hits: # Don't use estimated bbox for the first five observations
+                if len(self.trackers[m].history_observations) > self.min_hits and self.trackers[m].time_since_update <= max(1, int(0.1*self.fps)):   # Don't use estimated bbox for the first few observations, and keep showing that for 0.1*fps frames
                     estimated_bbox = np.array(np.round(self.trackers[m].get_state()))
                     ret.append(
                         np.concatenate((estimated_bbox[0], np.float16([self.trackers[m].id + 1]), np.float16([self.trackers[m].conf]), np.float16([self.trackers[m].cls]), np.float16([self.trackers[m].det_ind]))).reshape(1, -1)
                     )
+                    confirmed_tracks.append(False)
 # ____________________________________________________________________________________________________
 
         # create and initialise new trackers for unmatched detections
@@ -388,20 +402,24 @@ class OCSort(object):
                         1, -1
                     )
                 )
-# MY ADDED SECTION ____________________________________________________________________________________
+                confirmed_tracks.append(True)
+# ADDED SECTION ____________________________________________________________________________________
 
+            # for tracks that were not associated for a while but they are getting back (They are live tracks, but standby)
             elif (trk.time_since_update < 1) and (trk.hit_streak < self.min_hits): 
-                if len(trk.history_observations) > self.min_hits: # Don't use estimated bbox for the first five observations
+                if len(trk.history_observations) > self.min_hits: # Exclude the tracks being seen for the first time
+                    # if trk.hit_streak > 1:  # at least two consecutive associations
                     estimated_bbox = np.array(np.round(trk.get_state()))
                     ret.append(
                         np.concatenate((estimated_bbox[0], np.float16([trk.id + 1]), np.float16([trk.conf]), np.float16([trk.cls]), np.float16([trk.det_ind]))).reshape(1, -1)
                     )
+                    confirmed_tracks.append(True) # we had a matched detection, we're just waiting for it to hit streak
 # ____________________________________________________________________________________________________
 
             i -= 1
             # remove dead tracklet
             if trk.time_since_update > self.max_age:
-                self.trackers.pop(i)
+                self.trackers.pop(i)        
         if len(ret) > 0:
-            return np.concatenate(ret)
-        return np.array([])
+            return np.concatenate(ret), confirmed_tracks
+        return np.array([]), []

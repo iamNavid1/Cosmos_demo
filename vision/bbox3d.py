@@ -62,10 +62,10 @@ class BBox3D:
     @staticmethod
     def get_bottom(center, theta):
         xc, yc = center
-        bottom = np.array([[xc-7, yc-4], 
-                           [xc+7, yc-4], 
-                           [xc+7, yc+4], 
-                           [xc-7, yc+4]])
+        bottom = np.array([[xc-12, yc-7], 
+                           [xc+12, yc-7], 
+                           [xc+12, yc+7], 
+                           [xc-12, yc+7]])
         R = np.array([[np.cos(theta), -np.sin(theta)], 
                       [np.sin(theta), np.cos(theta)]])
         rotated_bottom = np.matmul(R, (bottom - [xc, yc]).T).T + [xc, yc]

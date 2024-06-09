@@ -11,7 +11,7 @@ class Cam2Bird:
     def __init__(self):
         homographies_path =  "./projection/Homography_Matrix"
         regions_path = "./projection/ROI_Vertices"
-        self.h_matrices, self.regions = self.load(homographies_path, regions_path)
+        self.h_matrices, self.regions, self.centeroids = self.load(homographies_path, regions_path)
         self.smoother = TrajectorySmoother()
         
 
@@ -21,12 +21,15 @@ class Cam2Bird:
         r_files = glob.glob(os.path.join(regions_path, "*.csv"))
         h_matrices = []
         regions = []
+        centeroids = []
         for h_file, r_file in zip(h_files, r_files):
             h_matrix = pd.read_csv(h_file, header=None).values
             h_matrices.append(h_matrix)
             region = pd.read_csv(r_file, header=None).values
             regions.append(region)
-        return h_matrices, regions
+            centeroid = np.mean(region, axis=0)
+            centeroids.append(centeroid)
+        return h_matrices, regions, centeroids
 
 
     @staticmethod
@@ -42,16 +45,13 @@ class Cam2Bird:
                 return self.h_matrices[region_id]
 
         # If the point is not inside any of the regions due to detection inacuracies:
-        if self.is_inside_region(CamCoordinate[0], CamCoordinate[1], [[0-100,720+100],[0-100,330],[1280+100,330],[1280+100,720+100]]):
-            return self.h_matrices[0]
-        if self.is_inside_region(CamCoordinate[0], CamCoordinate[1], [[0-100,330],[0-100,220],[1280+100,220],[1280+100,330]]):
-            return self.h_matrices[1]
-        if self.is_inside_region(CamCoordinate[0], CamCoordinate[1], [[0-100,220],[0-100,0-100],[640,0-100],[640,220]]):
-            return self.h_matrices[5]
-        if self.is_inside_region(CamCoordinate[0], CamCoordinate[1], [[640,220],[640,0-100],[1280+100,0-100],[1280+100,220]]):
-            return self.h_matrices[3]
-        raise ValueError("Point is not inside any region or close to any region!")
-
+        # Find the closest region centeroid to the point
+        distances = []
+        for centeroid in self.centeroids:
+            distance = np.linalg.norm(np.array(CamCoordinate[:2]) - centeroid)
+            distances.append(distance)
+        region_id = np.argmin(distances)
+        return self.h_matrices[region_id]
 
     def add_transformation(self, CamCoordinates):
         destinations = []

@@ -44,7 +44,8 @@ class ResourceLoader:
                 asso_func='iou',
                 det_thresh = .2,
                 min_hits=3,
-                max_age = 90)
+                max_age = 90,
+                fps = int(c.fps))
             return tracker
         except FileNotFoundError as e:
             print(f"Error loading tracker: {e}")

@@ -113,9 +113,9 @@ def VizBird(track_dic, frame):
             color = get_color(key)
             for i in range(len(filtered_points) - 1):
                 # cv.line(birdseye_copy, [int(filtered_points[i][0]), int(filtered_points[i][1])], [int(filtered_points[i+1][0]), int(filtered_points[i+1][1])], (255, 0, 0), 1)
-                cv.line(frame, [filtered_points[i][0], filtered_points[i][1]], [int(filtered_points[i+1][0]), int(filtered_points[i+1][1])], color, 2, cv.LINE_AA)
-                cv.circle(frame, [track_dic[key]['pos_bird'][-1][0], track_dic[key]['pos_bird'][-1][1]], 6, color, -1, cv.LINE_AA)
-                cv.circle(frame, [track_dic[key]['pos_bird'][-1][0], track_dic[key]['pos_bird'][-1][1]], 6, (255, 255, 255), 1, cv.LINE_AA)
+                cv.line(frame, [filtered_points[i][0], filtered_points[i][1]], [int(filtered_points[i+1][0]), int(filtered_points[i+1][1])], color, 4, cv.LINE_AA)
+                cv.circle(frame, [track_dic[key]['pos_bird'][-1][0], track_dic[key]['pos_bird'][-1][1]], 12, color, -1, cv.LINE_AA)
+                cv.circle(frame, [track_dic[key]['pos_bird'][-1][0], track_dic[key]['pos_bird'][-1][1]], 13, (255, 255, 255), 2, cv.LINE_AA)
 
 
 def Viz3Dbbox(track_dic, frame):
