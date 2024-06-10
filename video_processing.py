@@ -96,3 +96,24 @@ class VideoProcessor:
                         break
 
         return self.combined_frame
+    
+
+def initial_load(args):
+
+    args.fps = 4
+    args.resolution = '1920x1080'
+    args.num_instances =5
+    args.plot_size = 600
+    args.pose_viz = True
+
+    loader = ResourceLoader(args)
+    birdseye = loader.load_background()
+
+    # Frame properties for displaying and saving
+    cam_width, cam_height = map(int, args.resolution.split('x'))
+    birdseye_height, birdseye_width = birdseye.shape[:2]
+    total_width = cam_width + birdseye_width
+    total_height = max(cam_height, birdseye_height) + args.plot_size
+
+    return total_width, total_height
+

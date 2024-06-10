@@ -5,7 +5,7 @@ import gi
 import cv2
 import socket
 import argparse
-from video_processing import VideoProcessor
+from video_processing import VideoProcessor, initial_load
 
 gi.require_version('Gst', '1.0')
 gi.require_version('GstRtspServer', '1.0')
@@ -22,13 +22,7 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
         self.fps = args.fps
         self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
 
-        self.cam_width, self.cam_height = map(int, args.resolution.split('x'))
-        self.birdseye_height, self.birdseye_width = self.birdseye.shape[:2]
-        self.total_width = self.cam_width + self.birdseye_width
-        self.total_height = max(self.cam_height, self.birdseye_height) + args.plot_size
-
-
-        self.cam_width, self.cam_height = map(int, args.resolution.split('x'))
+        self.cam_width, self.cam_height = initial_load(args)
         
         self.launch_string = 'appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ' \
                              f'caps=video/x-raw,format=BGR,width={self.total_width},height={self.total_height},framerate={self.fps}/1 ' \
