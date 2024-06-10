@@ -14,14 +14,6 @@ class VideoProcessor:
     Main class to process the video stream for pedestrian tracking and pose estimation
     """
     def __init__(self, args):
-
-        args.fps = 4
-        args.resolution = '1920x1080'
-        args.num_instances =5
-        args.plot_size = 600
-        args.pose_viz = True
-
-
         self.args = args
 
         # Import resources
@@ -98,7 +90,7 @@ class VideoProcessor:
         return self.combined_frame
     
 
-def initial_load(args):
+def get_frame_size(args):
 
     args.fps = 4
     args.resolution = '1920x1080'

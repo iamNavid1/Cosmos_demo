@@ -5,11 +5,12 @@ import gi
 import cv2
 import socket
 import argparse
-from video_processing import VideoProcessor, initial_load
+from video_processing import VideoProcessor, get_frame_size
 
 gi.require_version('Gst', '1.0')
 gi.require_version('GstRtspServer', '1.0')
-from gi.repository import Gst, GstRtspServer, GObject
+gi.require_version('GLib', '2.0')
+from gi.repository import Gst, GstRtspServer, GObject, GLib
 
 class SensorFactory(GstRtspServer.RTSPMediaFactory):
     """
@@ -21,17 +22,18 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
         self.number_frames = 0
         self.fps = args.fps
         self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
-
-        self.total_width, self.total_height = initial_load(args)
-        
+        self.total_width, self.total_height = get_frame_size(args)
         self.launch_string = 'appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ' \
                              f'caps=video/x-raw,format=BGR,width={self.total_width},height={self.total_height},framerate={self.fps}/1 ' \
                              '! videoconvert ! video/x-raw,format=I420 ' \
                              '! x264enc speed-preset=ultrafast tune=zerolatency ' \
                              '! rtph264pay config-interval=1 name=pay0 pt=96' 
+        
         self.processor = VideoProcessor(args)
 
     def on_need_data(self, src, length):
+        """
+        """
         if self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
@@ -60,14 +62,16 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
 
 
 class GstServer(GstRtspServer.RTSPServer):
+    """
+    """
     def __init__(self, **properties):
         super(GstServer, self).__init__(**properties)
         self.factory = SensorFactory()
         self.factory.set_shared(True)
         self.set_service(str(args.port))
-        self.get_mount_points().add_factory(args.stream_uri, self.factory)
+        self.get_mount_points().add_factory(args.uri, self.factory)
         self.attach(None)
-        print(f"Stream Address: rtsp://{self.get_ip()}:{args.port}{args.stream_uri}")
+        print(f"Stream Address: rtsp://{self.get_ip()}:{args.port}{args.uri}")
 
     def get_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -78,13 +82,13 @@ class GstServer(GstRtspServer.RTSPServer):
 
 
 parser = argparse.ArgumentParser(description="Pedestrian Tracking Program")
-parser.add_argument('--usr_name', type=str, help='User name for the rtsp stream')
-parser.add_argument('--usr_pwd', type=str, help='Password for the rtsp stream')
-parser.add_argument('--rtsp_url', type=str, help='RTSP URL for the progress file')
+parser.add_argument('--usr_name', required=True, type=str, help='User name for the rtsp stream')
+parser.add_argument('--usr_pwd', required=True, type=str, help='Password for the rtsp stream')
+parser.add_argument('--rtsp_url', required=True, type=str, help='RTSP URL for the progress file')
 parser.add_argument('--resolution', type=str, default='1920x1080', help='Resolution for the rtsp stream')
 parser.add_argument("--fps", default=4, help="fps of the rtsp stream", type=int)
 parser.add_argument("--port", default=8554, help="port to stream video", type=int)
-parser.add_argument("--stream_uri", default="/video_stream", help="rtsp video stream uri")
+parser.add_argument("--uri", default="/cosmos_demo", help="rtsp video stream uri")
 parser.add_argument('--num_instances', type=int, default=5, help='Number of instances for displaying 3d pose estimation')
 parser.add_argument('--plot_size', type=int, default=600, help='Size of the plot for displaying 3d pose estimation')
 args = parser.parse_args()
@@ -93,5 +97,5 @@ args = parser.parse_args()
 GObject.threads_init()
 Gst.init(None)
 server = GstServer()
-loop = GObject.MainLoop()
+loop = GLib.MainLoop()
 loop.run()
