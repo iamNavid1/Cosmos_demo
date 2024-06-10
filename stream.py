@@ -22,7 +22,7 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
         self.fps = args.fps
         self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
 
-        self.cam_width, self.cam_height = initial_load(args)
+        self.total_width, self.total_height = initial_load(args)
         
         self.launch_string = 'appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ' \
                              f'caps=video/x-raw,format=BGR,width={self.total_width},height={self.total_height},framerate={self.fps}/1 ' \
