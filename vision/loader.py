@@ -43,6 +43,7 @@ class ResourceLoader:
                 # device='mps',
                 # fp16=True,
                 asso_func='iou',
+                iou_threshold = .3 if self.fps > 10 else .2,
                 det_thresh = .2,
                 min_hits=3,
                 max_age = 90,
