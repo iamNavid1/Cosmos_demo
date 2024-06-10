@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import gi
+import cv2
+import socket
+import argparse
+from video_processing import VideoProcessor
+
+gi.require_version('Gst', '1.0')
+gi.require_version('GstRtspServer', '1.0')
+from gi.repository import Gst, GstRtspServer, GObject
+
+class SensorFactory(GstRtspServer.RTSPMediaFactory):
+    """
+    """
+    def __init__(self, **properties):
+        super(SensorFactory, self).__init__(**properties)
+        self.cap = cv2.VideoCapture(args.device_id)
+        self.number_frames = 0
+        self.fps = args.fps
+        self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
+        self.cam_width, self.cam_height = map(int, args.resolution.split('x'))
+        
+        self.launch_string = 'appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ' \
+                             f'caps=video/x-raw,format=BGR,width={self.cam_width},height={self.cam_height},framerate={self.fps}/1 ' \
+                             '! videoconvert ! video/x-raw,format=I420 ' \
+                             '! x264enc speed-preset=ultrafast tune=zerolatency ' \
+                             '! rtph264pay config-interval=1 name=pay0 pt=96' 
+        self.processor = VideoProcessor(args)
+
+    def on_need_data(self, src, length):
+        if self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                frame = self.processor.process_frame(frame)
+                data = frame.tobytes()
+                buf = Gst.Buffer.new_allocate(None, len(data), None)
+                buf.fill(0, data)
+                buf.duration = self.duration
+                timestamp = self.number_frames * self.duration
+                buf.pts = buf.dts = int(timestamp)
+                buf.offset = timestamp
+                self.number_frames += 1
+                retval = src.emit('push-buffer', buf)
+                # write float with 2 decimal points
+                print(f'pushed buffer, frame {self.number_frames}, durations {float(self.duration) / Gst.SECOND:.4f} s')
+                if retval != Gst.FlowReturn.OK:
+                    print(retval)
+
+    def do_create_element(self, url):
+        return Gst.parse_launch(self.launch_string)
+    
+    def do_configure(self, rtsp_media):
+        self.number_frames = 0
+        appsrc = rtsp_media.get_element().get_child_by_name('source')
+        appsrc.connect('need-data', self.on_need_data)
+
+
+class GstServer(GstRtspServer.RTSPServer):
+    def __init__(self, **properties):
+        super(GstServer, self).__init__(**properties)
+        self.factory = SensorFactory()
+        self.factory.set_shared(True)
+        self.set_service(str(args.port))
+        self.get_mount_points().add_factory(args.stream_uri, self.factory)
+        self.attach(None)
+        print(f"Stream Address: rtsp://{self.get_ip()}:{args.port}{args.stream_uri}")
+
+    def get_ip(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--device_id", required=True, help="device id for the video device or video file location")
+parser.add_argument("--fps", required=True, help="fps of the camera", type=int)
+parser.add_argument("--image_width", required=True, help="video frame width", type=int)
+parser.add_argument("--image_height", required=True, help="video frame height", type=int)
+parser.add_argument("--port", default=8554, help="port to stream video", type=int)
+parser.add_argument("--stream_uri", default="/video_stream", help="rtsp video stream uri")
+parser.add_argument('--pose_viz', action='store_true', default=True, help="Whether to visualize the pose estimation")
+parser.add_argument('--num_instances', type=int, default=5, help='Number of instances for displaying 3d pose estimation')
+parser.add_argument('--plot_size', type=int, default=600, help='Size of the plot for displaying 3d pose estimation')
+args = parser.parse_args()
+
+try:
+    args.device_id = int(args.device_id)
+except ValueError:
+    pass
+
+# initializing the threads and running the stream on loop.
+GObject.threads_init()
+Gst.init(None)
+server = GstServer()
+loop = GObject.MainLoop()
+loop.run()
