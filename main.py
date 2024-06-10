@@ -15,15 +15,15 @@ from projection.coordTrans import Cam2Bird
 def Main(args):
 
     # Import resources
-    loader = ResourceLoader()
+    loader = ResourceLoader(args)
     detection_model, classes_list = loader.load_yolo()        # YOLO model and its classes 
     tracker = loader.load_tracker()                           # Tracker model
     pose_model, pose_lifter, visualizer = loader.load_pose()  # Pose estimation model, its lifter, and visualizer
     birdseye = loader.load_background()      # Background images at camera view and birdseye view
 
     # Initialize the object detector, pose estimator, and projection
-    object_detector = ObjectDetection(detection_model, classes_list, tracker, args.resolution)
-    pose_estimator = PoseEstimation(pose_model, pose_lifter, visualizer, args.num_instances, args.plot_size, args.pose_viz)
+    object_detector = ObjectDetection(detection_model, classes_list, tracker, args)
+    pose_estimator = PoseEstimation(pose_model, pose_lifter, visualizer, args)
     projection = Cam2Bird()
 
     # Frame properties for displaying and saving
@@ -92,7 +92,7 @@ def Main(args):
 
         # Visualize the bird's eye view of the detected objects
         birdseye_copy = birdseye.copy()
-        VizBird(track_dic, birdseye_copy)
+        VizBird(track_dic, birdseye_copy, args)
 
         frame_idx += 1
         
@@ -142,13 +142,13 @@ def Main(args):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pedestrian Tracking Program")
-    parser.add_argument('--input', type=str, default='dropped2.mkv', help="Path to input file")
+    parser.add_argument('--input', type=str, default='test2.mp4', help="Path to input file")
     parser.add_argument('--pose_viz', action='store_true', default=True, help="Whether to visualize the pose estimation")
     parser.add_argument('--usr_name', type=str, default="cosmosuser", help='User name for the progress file')
     parser.add_argument('--usr_pwd', type=str, default="cosmos101", help='Password for the progress file')
     parser.add_argument('--rtsp_url', type=str, default="cam1-md1.sb1.cosmos-lab.org/axis-media/media.amp", help='RTSP URL for the progress file')
     parser.add_argument('--resolution', type=str, default='1920x1080', help='Resolution for the progress file')
-    parser.add_argument('--fps', type=int, default=10, help='FPS for the progress file')
+    parser.add_argument('--fps', type=int, default=4, help='FPS for the progress file')
     parser.add_argument('--num_instances', type=int, default=5, help='Number of instances for displaying 3d pose estimation')
     parser.add_argument('--plot_size', type=int, default=600, help='Size of the plot for displaying 3d pose estimation')
     args = parser.parse_args()

@@ -13,11 +13,11 @@ from mmpose.structures import PoseDataSample, merge_data_samples, split_instance
 
 class ObjectDetection:
     
-    def __init__(self, model, classes_list, tracker=None, resolution='1920x1080'): 
+    def __init__(self, model, classes_list, tracker, args): 
         self.model = model
         self.classes_list = classes_list
         self.tracker = tracker
-        width, height = map(int, resolution.split('x'))
+        width, height = map(int, args.resolution.split('x'))
         mask = np.array([[int(vertex[0]*width), int(vertex[1]*height)] 
                          for vertex in c.frame_mask])
         self.roi = Polygon(mask)
@@ -86,16 +86,16 @@ class ObjectDetection:
 
 class PoseEstimation:
         
-        def __init__(self, pose_estimator, pose_lifter, visualizer, num_instances, plot_size, pose_viz=False):
+        def __init__(self, pose_estimator, pose_lifter, visualizer, args):
             self.pose_estimator = pose_estimator
             self.pose_lifter = pose_lifter
             self.visualizer = visualizer
             self.pose_est_results_list = []
-            self.num_instances = num_instances
-            self.plot_size = plot_size
-            self.pose_viz = pose_viz
-            self.filter2D = PoseFilter(dim=2)
-            self.filter3D = PoseFilter(dim=3)
+            self.num_instances = args.num_instances
+            self.plot_size = args.plot_size
+            self.pose_viz = args.pose_viz
+            self.filter2D = PoseFilter(dim=2, fps=args.fps)
+            self.filter3D = PoseFilter(dim=3, fps=args.fps)
 
 
         def get_pose(self, frame, frame_idx, detections, confirmed):

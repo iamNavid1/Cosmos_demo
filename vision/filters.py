@@ -90,14 +90,15 @@ class PoseFilter:
     """
     A class to filter out noisy keypoints by tracking them using Kalman filter
     """
-    def __init__(self, num_joints=17, dim=2, dt=1, max_staleness=90):
+    def __init__(self, num_joints=17, dim=2, max_staleness=90, fps=30):
         """
         Initialize the PoseFilter with the number of joints and dimensions
         """
         self.num_joints = num_joints
         self.dim = dim
-        self.dt = dt
         self.max_staleness = max_staleness
+        self.weak_tracking = True if fps < 10 else False
+        self.dt = 30 if fps < 10 else 10 if fps < 20 else 1
         self.track_filters = {}
 
     def update(self, 
@@ -141,9 +142,9 @@ class PoseFilter:
                 else:
                     # Increase the measurement uncertainty for unconfirmed keypoints temporarily
                     # factor = 10 if self.dim == 2 else 15
-                    pose_kalman_filter.kf.R *= 10
+                    pose_kalman_filter.kf.R *= 10 if not self.weak_tracking else 3
                     pose_kalman_filter.update(z)
-                    pose_kalman_filter.kf.R /= 10
+                    pose_kalman_filter.kf.R /= 10 if not self.weak_tracking else 3
 
                 current_state = pose_kalman_filter.get_state()
                 updated_keypoints.append(current_state)

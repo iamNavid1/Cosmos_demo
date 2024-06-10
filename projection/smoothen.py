@@ -6,12 +6,13 @@ class TrajectoryFilter:
     """
     A class to filter out noise from detected object positions (trajectory) using Kalman filter
     """
-    def __init__(self, dim=2, dt=1):
+    def __init__(self, dim=2, dt=1, max_staleness=90):
         """
         Initialize the smoother with the dimension of the position and the time step
         """
         self.dim = dim
         self.dt = dt
+        self.max_staleness = max_staleness
         self.track_filters = {}
 
     def update(self, 
@@ -25,7 +26,7 @@ class TrajectoryFilter:
         to_delete = []
         for id, trk in self.track_filters.items():
             trk.predict()
-            if trk.stale_since() > 90:
+            if trk.stale_since() > self.max_staleness:
                 to_delete.append(id)
 
         for id in to_delete:
@@ -33,7 +34,7 @@ class TrajectoryFilter:
 
         for i, track_id in enumerate(track_ids):
             if track_id > 0:
-                z = np.array([detections[i].flatten() if detections[i] is not None else None])
+                z = np.array([detections[i].flatten() if len(detections[i]) != 0 else None])
 
                 if track_id not in self.track_filters:
                     self.track_filters[track_id] = TrajectoryKalmanFilter(
@@ -88,6 +89,7 @@ class TrajectoryKalmanFilter:
         Update the Kalman filter with observed positions
         """
         if positions is not None:
+            self.time_since_update = 0
             self.kf.update(positions.flatten())
         else:
             self.kf.update(None)
@@ -97,6 +99,7 @@ class TrajectoryKalmanFilter:
         Update the Kalman filter without observed positions and return the predicted positions
         """
         self.kf.predict()
+        self.time_since_update += 1
         return self.kf.x[:self.dim].flatten()
     
     def get_state(self):

@@ -15,7 +15,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 class ResourceLoader:
     
-    def __init__(self): 
+    def __init__(self, args): 
+        self.fps = args.fps
         pass
 
 
@@ -45,7 +46,7 @@ class ResourceLoader:
                 det_thresh = .2,
                 min_hits=3,
                 max_age = 90,
-                fps = int(c.fps))
+                fps = self.fps)
             return tracker
         except FileNotFoundError as e:
             print(f"Error loading tracker: {e}")

@@ -102,13 +102,14 @@ def get_color(idx):
     return [r, g, b]
 
 
-def VizBird(track_dic, frame):
+def VizBird(track_dic, frame, args):
     """
     Visualize the bird's eye view of the detected objects.
     """
+    num_frames = args.fps * 5
     for key in track_dic:
         if track_dic[key]['pos_bird'][-1] is not None:
-            points = track_dic[key]['pos_bird'][-180:]
+            points = track_dic[key]['pos_bird'][-num_frames:]
             filtered_points = [pt for pt in points if pt is not None]
             color = get_color(key)
             for i in range(len(filtered_points) - 1):
