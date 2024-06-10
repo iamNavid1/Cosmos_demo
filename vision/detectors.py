@@ -249,22 +249,22 @@ class PoseEstimation:
             det_data_sample = merge_data_samples(pose_est_results)
             pred_3d_keypoints = pred_3d_data_samples.get('pred_instances', None).get('keypoints')
             
-            if self.pose_viz:
-                pose2d_frame, pose3d_dic = self.visualizer.add_datasample(
-                    visualize_frame,
-                    data_sample=pred_3d_data_samples,
-                    det_data_sample=det_data_sample,
-                    track_ids=track_ids,
-                    dataset_2d=pose_det_dataset_name,
-                    dataset_3d=pose_lift_dataset_name,
-                    draw_bbox=False,
-                    kpt_thr=0.2,
-                    num_instances=self.num_instances,
-                    plot_size=self.plot_size,
-                    show_kpt_idx=False)            
-            else:
-                pose2d_frame = self.frame
-                pose3d_dic = {}
+            # if self.pose_viz:
+            pose2d_frame, pose3d_dic = self.visualizer.add_datasample(
+                visualize_frame,
+                data_sample=pred_3d_data_samples,
+                det_data_sample=det_data_sample,
+                track_ids=track_ids,
+                dataset_2d=pose_det_dataset_name,
+                dataset_3d=pose_lift_dataset_name,
+                draw_bbox=False,
+                kpt_thr=0.2,
+                num_instances=self.num_instances,
+                plot_size=self.plot_size,
+                show_kpt_idx=False)            
+            # else:
+            #     pose2d_frame = self.frame
+            #     pose3d_dic = {}
                                     
             return pose2d_frame, pose3d_dic, pred_3d_keypoints
 

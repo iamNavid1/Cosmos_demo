@@ -75,14 +75,14 @@ class GstServer(GstRtspServer.RTSPServer):
         return ip
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--device_id", required=True, help="device id for the video device or video file location")
-parser.add_argument("--fps", required=True, help="fps of the camera", type=int)
-parser.add_argument("--image_width", required=True, help="video frame width", type=int)
-parser.add_argument("--image_height", required=True, help="video frame height", type=int)
+parser = argparse.ArgumentParser(description="Pedestrian Tracking Program")
+parser.add_argument('--usr_name', type=str, help='User name for the rtsp stream')
+parser.add_argument('--usr_pwd', type=str, help='Password for the rtsp stream')
+parser.add_argument('--rtsp_url', type=str, help='RTSP URL for the progress file')
+parser.add_argument('--resolution', type=str, default='1920x1080', help='Resolution for the rtsp stream')
+parser.add_argument("--fps", required=True, help="fps of the rtsp stream", type=int)
 parser.add_argument("--port", default=8554, help="port to stream video", type=int)
-parser.add_argument("--stream_uri", default="/video_stream", help="rtsp video stream uri")
-parser.add_argument('--pose_viz', action='store_true', default=True, help="Whether to visualize the pose estimation")
+parser.add_argument("--stream_uri", default="/cosmos_demo", help="rtsp video stream uri")
 parser.add_argument('--num_instances', type=int, default=5, help='Number of instances for displaying 3d pose estimation')
 parser.add_argument('--plot_size', type=int, default=600, help='Size of the plot for displaying 3d pose estimation')
 args = parser.parse_args()

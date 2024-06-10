@@ -14,6 +14,8 @@ class VideoProcessor:
     Main class to process the video stream for pedestrian tracking and pose estimation
     """
     def __init__(self, args):
+        self.args = args
+
         # Import resources
         self.loader = ResourceLoader(args)
         self.detection_model, self.classes_list = self.loader.load_yolo()
@@ -68,11 +70,11 @@ class VideoProcessor:
         self.combined_frame[:self.birdseye_height, self.cam_width:] = birdseye_copy
         y_offset = max(self.cam_height, self.birdseye_height)
 
-        availability = [True] * args.num_instances
+        availability = [True] * self.args.num_instances
         included = []
         for i, track_id in enumerate(self.plot_order):
             if track_id in pose3d_dic:
-                self.combined_frame[y_offset:, i * args.plot_size:(i + 1) * args.plot_size] = pose3d_dic[track_id]
+                self.combined_frame[y_offset:, i * self.args.plot_size:(i + 1) * self.args.plot_size] = pose3d_dic[track_id]
                 included.append(track_id)
                 availability[i] = False
 
@@ -80,26 +82,9 @@ class VideoProcessor:
             if free:
                 for key in pose3d_dic:
                     if key not in included:
-                        self.combined_frame[y_offset:, i * args.plot_size:(i + 1) * args.plot_size] = pose3d_dic[key]
+                        self.combined_frame[y_offset:, i * self.args.plot_size:(i + 1) * self.args.plot_size] = pose3d_dic[key]
                         included.append(key)
                         self.plot_order[i] = key if key > 0 else self.plot_order[i]
                         break
 
         return self.combined_frame
-
-
-   
-
-    
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Pedestrian Tracking Program")
-    parser.add_argument('--input', type=str, default='test2.mp4', help="Path to input file")
-    parser.add_argument('--pose_viz', action='store_true', default=True, help="Whether to visualize the pose estimation")
-    parser.add_argument('--usr_name', type=str, default="cosmosuser", help='User name for the progress file')
-    parser.add_argument('--usr_pwd', type=str, default="cosmos101", help='Password for the progress file')
-    parser.add_argument('--rtsp_url', type=str, default="cam1-md1.sb1.cosmos-lab.org/axis-media/media.amp", help='RTSP URL for the progress file')
-    parser.add_argument('--resolution', type=str, default='1920x1080', help='Resolution for the progress file')
-    parser.add_argument('--fps', type=int, default=4, help='FPS for the progress file')
-    parser.add_argument('--num_instances', type=int, default=5, help='Number of instances for displaying 3d pose estimation')
-    parser.add_argument('--plot_size', type=int, default=600, help='Size of the plot for displaying 3d pose estimation')
-    args = parser.parse_args()
