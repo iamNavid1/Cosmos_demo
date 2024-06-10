@@ -16,7 +16,8 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
     """
     def __init__(self, **properties):
         super(SensorFactory, self).__init__(**properties)
-        self.cap = cv2.VideoCapture(args.device_id)
+        rtsp_addr = f"rtsp://{args.usr_name}:{args.usr_pwd}@{args.rtsp_url}?videoencodec=h264&resolution={args.resolution}&fps={args.fps}"
+        self.cap = cv2.VideoCapture(rtsp_addr)
         self.number_frames = 0
         self.fps = args.fps
         self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
@@ -80,17 +81,12 @@ parser.add_argument('--usr_name', type=str, help='User name for the rtsp stream'
 parser.add_argument('--usr_pwd', type=str, help='Password for the rtsp stream')
 parser.add_argument('--rtsp_url', type=str, help='RTSP URL for the progress file')
 parser.add_argument('--resolution', type=str, default='1920x1080', help='Resolution for the rtsp stream')
-parser.add_argument("--fps", required=True, help="fps of the rtsp stream", type=int)
+parser.add_argument("--fps", default=4, help="fps of the rtsp stream", type=int)
 parser.add_argument("--port", default=8554, help="port to stream video", type=int)
 parser.add_argument("--stream_uri", default="/cosmos_demo", help="rtsp video stream uri")
 parser.add_argument('--num_instances', type=int, default=5, help='Number of instances for displaying 3d pose estimation')
 parser.add_argument('--plot_size', type=int, default=600, help='Size of the plot for displaying 3d pose estimation')
 args = parser.parse_args()
-
-try:
-    args.device_id = int(args.device_id)
-except ValueError:
-    pass
 
 # initializing the threads and running the stream on loop.
 GObject.threads_init()
