@@ -21,10 +21,17 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
         self.number_frames = 0
         self.fps = args.fps
         self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
+
+        self.cam_width, self.cam_height = map(int, args.resolution.split('x'))
+        self.birdseye_height, self.birdseye_width = self.birdseye.shape[:2]
+        self.total_width = self.cam_width + self.birdseye_width
+        self.total_height = max(self.cam_height, self.birdseye_height) + args.plot_size
+
+
         self.cam_width, self.cam_height = map(int, args.resolution.split('x'))
         
         self.launch_string = 'appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ' \
-                             f'caps=video/x-raw,format=BGR,width={self.cam_width},height={self.cam_height},framerate={self.fps}/1 ' \
+                             f'caps=video/x-raw,format=BGR,width={self.total_width},height={self.total_height},framerate={self.fps}/1 ' \
                              '! videoconvert ! video/x-raw,format=I420 ' \
                              '! x264enc speed-preset=ultrafast tune=zerolatency ' \
                              '! rtph264pay config-interval=1 name=pay0 pt=96' 
