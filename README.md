@@ -74,7 +74,7 @@ After running the script, wait a few seconds until you see the address to view t
 Open your preferred media player or browser that supports RTSP streaming (e.g., VLC Media Player) and enter the provided RTSP URL to view the live video feed with 3D pose estimations.
 For testing purposes, we have included a Python file named rtsp_test.py to help you verify and view the RTSP stream. To run this test script, simply execute the following command in a new terminal:
     ```sh
-    python rtsp_test.py   
+    python rtsp_test.py --stream_address "rtsp://<server-ip-address>:8554/<stream_uri>"
     ```
 
     
