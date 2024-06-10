@@ -26,7 +26,7 @@ def main(address):
     while True:
         ret, frame = cap.read()
         if ret:
-            cv2.imshow("RTSP Test", frame)
+            cv2.imshow("Cosmos Demo", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         else:
