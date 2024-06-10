@@ -83,7 +83,7 @@ parser.add_argument('--rtsp_url', type=str, help='RTSP URL for the progress file
 parser.add_argument('--resolution', type=str, default='1920x1080', help='Resolution for the rtsp stream')
 parser.add_argument("--fps", default=4, help="fps of the rtsp stream", type=int)
 parser.add_argument("--port", default=8554, help="port to stream video", type=int)
-parser.add_argument("--stream_uri", default="/cosmos_demo", help="rtsp video stream uri")
+parser.add_argument("--stream_uri", default="/video_stream", help="rtsp video stream uri")
 parser.add_argument('--num_instances', type=int, default=5, help='Number of instances for displaying 3d pose estimation')
 parser.add_argument('--plot_size', type=int, default=600, help='Size of the plot for displaying 3d pose estimation')
 args = parser.parse_args()

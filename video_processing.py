@@ -32,9 +32,9 @@ class VideoProcessor:
         self.birdseye = self.loader.load_background()
 
         # Initialize the object detector, pose estimator, and projection
-        object_detector = ObjectDetection(self.detection_model, self.classes_list, self.tracker, args)
-        pose_estimator = PoseEstimation(self.pose_model, self.pose_lifter, self.visualizer, args)
-        projection = Cam2Bird()
+        self.object_detector = ObjectDetection(self.detection_model, self.classes_list, self.tracker, args)
+        self.pose_estimator = PoseEstimation(self.pose_model, self.pose_lifter, self.visualizer, args)
+        self.projection = Cam2Bird()
 
         # Frame properties for displaying and saving
         self.cam_width, self.cam_height = map(int, args.resolution.split('x'))
@@ -45,9 +45,9 @@ class VideoProcessor:
             args.num_instances = self.total_width // args.plot_size
         self.combined_frame = np.ones((self.total_height, self.total_width, 3), dtype=np.uint8) * 255
 
-        plot_order = [0] * args.num_instances    # A list to Maintain the order of pose3d plots
-        track_dic = {}                           # A dictionary to store the track history
-        frame_idx = 1                            # Frame index
+        self.plot_order = [0] * args.num_instances    # A list to Maintain the order of pose3d plots
+        self.track_dic = {}                           # A dictionary to store the track history
+        self.frame_idx = 1                            # Frame index
 
     def process_frame(self, frame):
         # Detect people in the frame
