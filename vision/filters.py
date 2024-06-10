@@ -1,11 +1,10 @@
 import numpy as np
-# from filterpy.kalman import KalmanFilter
 from .kalman_filter import KalmanFilter
 from typing import List, Dict
 
 
 
-class PoseKalmanFilter():
+class PoseKalmanFilter:
     """
     A class to maintain internal state of all joints of each pose instance using Kalman filter
     """
@@ -76,7 +75,7 @@ class PoseKalmanFilter():
     
     def stale_since(self):
         """
-        Return the time since the last observed keypoints
+        Return the number of frames since the last observed keypoints
         """
         return self.time_since_update
         
@@ -87,7 +86,7 @@ class PoseKalmanFilter():
         return self.time_since_update == 0
     
     
-class PoseFilter():
+class PoseFilter:
     """
     A class to filter out noisy keypoints by tracking them using Kalman filter
     """

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from shapely.geometry import Point, Polygon
-from projection.smoothen import TrajectorySmoother
+from projection.smoothen import TrajectoryFilter
 import os
 import glob
 
@@ -12,7 +12,7 @@ class Cam2Bird:
         homographies_path =  "./projection/Homography_Matrix"
         regions_path = "./projection/ROI_Vertices"
         self.h_matrices, self.regions, self.centeroids = self.load(homographies_path, regions_path)
-        self.smoother = TrajectorySmoother()
+        self.filter_trajectory = TrajectoryFilter() # Smoothing the trajectory
         
 
     @staticmethod
@@ -62,10 +62,10 @@ class Cam2Bird:
             destination = np.dot(h, source)
             destination /= destination[2]
             destination = (destination[:2] + .5).astype(int).flatten()
-            destinations.append(destination.tolist())
+            destinations.append(destination)
             track_ids.append(CamCoordinate[2])
         # Smoothing the positions using Kalman Filter
-        smoothed_positions = self.smoother.update(destinations, track_ids)
+        smoothed_positions = self.filter_trajectory.update(track_ids, destinations)
         # Combining original and smoothed positions
         self.positions = (np.concatenate((np.array(CamCoordinates, dtype='object'), np.array(smoothed_positions)), axis=1)).tolist()
         return self.positions

@@ -142,7 +142,7 @@ def Main(args):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pedestrian Tracking Program")
-    parser.add_argument('--input', type=str, default='test2.mp4', help="Path to input file")
+    parser.add_argument('--input', type=str, default='dropped2.mkv', help="Path to input file")
     parser.add_argument('--pose_viz', action='store_true', default=True, help="Whether to visualize the pose estimation")
     parser.add_argument('--usr_name', type=str, default="cosmosuser", help='User name for the progress file')
     parser.add_argument('--usr_pwd', type=str, default="cosmos101", help='Password for the progress file')
