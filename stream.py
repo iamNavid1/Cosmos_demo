@@ -5,6 +5,8 @@ import gi
 import cv2
 import socket
 import argparse
+import threading
+import queue
 from video_processing import VideoProcessor, get_frame_size
 
 gi.require_version('Gst', '1.0')
@@ -14,6 +16,7 @@ from gi.repository import Gst, GstRtspServer, GObject, GLib
 
 class SensorFactory(GstRtspServer.RTSPMediaFactory):
     """
+    A class to create a factory for the rtsp stream
     """
     def __init__(self, **properties):
         super(SensorFactory, self).__init__(**properties)
@@ -30,27 +33,44 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
                              '! rtph264pay config-interval=1 name=pay0 pt=96' 
         
         self.processor = VideoProcessor(args)
+        self.frame_queue = queue.Queue(maxsize=10)  # hold 10 frames in buffer
+        self.capture_thread = threading.Thread(target=self.capture_frames)
+        self.capture_thread.daemon = True
+        self.capture_thread.start()
+
+    def capture_frames(self):
+        """
+        A method to capture frames from the rtsp stream and store them in a queue
+        """
+        while True:
+            if self.cap.isOpened():
+                ret, frame = self.cap.read()
+                if ret:
+                    if not self.frame_queue.full():
+                        self.frame_queue.put(frame)
+                    else:
+                        self.frame_queue.get()  # remove the oldest frame
+                        self.frame_queue.put(frame)
 
     def on_need_data(self, src, length):
         """
+        A method to process the frames and push them to the rtsp stream
         """
-        if self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if ret:
-                frame = self.processor.process_frame(frame)
-                data = frame.tobytes()
-                buf = Gst.Buffer.new_allocate(None, len(data), None)
-                buf.fill(0, data)
-                buf.duration = self.duration
-                timestamp = self.number_frames * self.duration
-                buf.pts = buf.dts = int(timestamp)
-                buf.offset = timestamp
-                self.number_frames += 1
-                retval = src.emit('push-buffer', buf)
-                # write float with 2 decimal points
-                print(f'pushed buffer, frame {self.number_frames}, durations {float(self.duration) / Gst.SECOND:.4f} s')
-                if retval != Gst.FlowReturn.OK:
-                    print(retval)
+        if not self.frame_queue.empty():
+            frame = self.frame_queue.get()
+            frame = self.processor.process_frame(frame)
+            data = frame.tobytes()
+            buf = Gst.Buffer.new_allocate(None, len(data), None)
+            buf.fill(0, data)
+            buf.duration = self.duration
+            timestamp = self.number_frames * self.duration
+            buf.pts = buf.dts = int(timestamp)
+            buf.offset = timestamp
+            self.number_frames += 1
+            retval = src.emit('push-buffer', buf)
+            print(f'pushed buffer, frame {self.number_frames}, durations {float(self.duration) / Gst.SECOND:.4f} s')
+            if retval != Gst.FlowReturn.OK:
+                print(retval)
 
     def do_create_element(self, url):
         return Gst.parse_launch(self.launch_string)
@@ -63,6 +83,7 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
 
 class GstServer(GstRtspServer.RTSPServer):
     """
+    A class to create the rtsp server
     """
     def __init__(self, **properties):
         super(GstServer, self).__init__(**properties)
