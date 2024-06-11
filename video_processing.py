@@ -92,12 +92,6 @@ class VideoProcessor:
 
 def get_frame_size(args):
 
-    args.fps = 4
-    args.resolution = '1920x1080'
-    args.num_instances =5
-    args.plot_size = 600
-    args.pose_viz = True
-
     loader = ResourceLoader(args)
     birdseye = loader.load_background()
 

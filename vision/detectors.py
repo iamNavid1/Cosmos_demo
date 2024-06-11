@@ -93,7 +93,6 @@ class PoseEstimation:
             self.pose_est_results_list = []
             self.num_instances = args.num_instances
             self.plot_size = args.plot_size
-            self.pose_viz = args.pose_viz
             self.filter2D = PoseFilter(dim=2, fps=args.fps)
             self.filter3D = PoseFilter(dim=3, fps=args.fps)
 
