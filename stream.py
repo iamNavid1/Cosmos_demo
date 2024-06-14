@@ -24,17 +24,17 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
         rtsp_addr = f"rtsp://{args.usr_name}:{args.usr_pwd}@{args.rtsp_url}?videoencodec=h264&resolution={args.resolution}&fps={args.fps}"
         self.cap = cv2.VideoCapture(rtsp_addr)
         self.number_frames = 0
-        self.fps = args.fps
-        self.duration = 1 / self.fps * Gst.SECOND  # duration of a frame in nanoseconds
+        self.cap_fps = args.fps
+        self.duration = 1 / self.cap_fps * Gst.SECOND  # duration of a frame in nanoseconds
         self.total_width, self.total_height = get_frame_size(args)
         self.launch_string = 'appsrc name=source is-live=true block=true format=GST_FORMAT_TIME ' \
-                             f'caps=video/x-raw,format=BGR,width={self.total_width},height={self.total_height},framerate={self.fps}/1 ' \
+                             f'caps=video/x-raw,format=BGR,width={self.total_width},height={self.total_height},framerate={self.cap_fps}/1 ' \
                              '! videoconvert ! video/x-raw,format=I420 ' \
                              '! x264enc speed-preset=ultrafast tune=zerolatency ' \
                              '! rtph264pay config-interval=1 name=pay0 pt=96' 
         
         self.processor = VideoProcessor(args)
-        self.frame_queue = queue.Queue(maxsize=10)  # hold 10 frames in buffer
+        self.frame_queue = queue.Queue(maxsize=2)  # hold 2 frames in buffer
         self.capture_thread = threading.Thread(target=self.capture_frames)
         self.capture_thread.daemon = True
         self.capture_thread.start()
