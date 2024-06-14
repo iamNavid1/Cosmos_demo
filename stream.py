@@ -7,6 +7,7 @@ import socket
 import argparse
 import threading
 import queue
+import time
 from video_processing import VideoProcessor, get_frame_size
 
 gi.require_version('Gst', '1.0')
@@ -37,6 +38,7 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
         self.capture_thread = threading.Thread(target=self.capture_frames)
         self.capture_thread.daemon = True
         self.capture_thread.start()
+        self.last_time = time.time()  # Initialize last_time
 
     def capture_frames(self):
         """
@@ -68,7 +70,10 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
             buf.offset = timestamp
             self.number_frames += 1
             retval = src.emit('push-buffer', buf)
-            print(f'pushed buffer, frame {self.number_frames}, durations {float(self.duration) / Gst.SECOND:.4f} s')
+            current_time = time.time()
+            fps = 1 / (current_time - self.last_time)
+            self.last_time = current_time
+            print(f'Pushed buffer, Frame {self.number_frames}, FPS: {fps:.1f}, Durations {float(self.duration) / Gst.SECOND:.4f} sec')
             if retval != Gst.FlowReturn.OK:
                 print(retval)
 
