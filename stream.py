@@ -73,7 +73,7 @@ class SensorFactory(GstRtspServer.RTSPMediaFactory):
             current_time = time.time()
             fps = 1 / (current_time - self.last_time)
             self.last_time = current_time
-            print(f'Pushed buffer, Frame {self.number_frames}, FPS: {fps:.1f}, Durations {float(self.duration) / Gst.SECOND:.4f} sec')
+            print(f'Pushed buffer, Frame {self.number_frames}, Stream FPS: {fps:.2f}, Capture durations {float(self.duration) / Gst.SECOND:.4f} sec')
             if retval != Gst.FlowReturn.OK:
                 print(retval)
 

@@ -26,7 +26,7 @@ class ObjectDetection:
     def get_pedestrains(self, frame, frame_idx):
         # results = self.model(self.frame, device=c.device, conf=c.conf)
         self.frame = frame.copy()
-        results = self.model(self.frame, conf=c.conf)                        
+        results = self.model(self.frame, conf=c.conf, verbose=False)      
         self.result = results[0]
         # Store detected objects and their confidence levels
         bboxes = np.array(self.result.boxes.xyxy.cpu(), dtype="int")
